@@ -1,5 +1,6 @@
 //Including the UI Elements
 let form = document.querySelector('#book-form');
+let booklist = document.querySelector('#book-list');
 
 //Book Class
 class Book {
@@ -12,10 +13,8 @@ class Book {
 
 //UX Class
 class UI {
-    constructor() {
 
-    }
-    addToBooklist(book) {
+    static addToBooklist(book) {
         let list = document.querySelector('#book-list');
         let row = document.createElement('tr');
         row.innerHTML = `<td>${book.title}</td>
@@ -24,12 +23,12 @@ class UI {
                          <td><a href="#" class="delete">X</a></td>`;
         list.appendChild(row);
     }
-    clearFields() {
+    static clearFields() {
         document.querySelector("#title").value = '';
         document.querySelector("#author").value = '';
         document.querySelector("#isbn").value = '';
     }
-    showAlert(message, className) {
+    static showAlert(message, className) {
         let div = document.createElement('div');
         div.className = `alert ${className}`;
         div.appendChild(document.createTextNode(message));
@@ -42,11 +41,59 @@ class UI {
         }, 3000);
 
     }
+    static deleteFromBook(target) {
+        if (target.hasAttribute('href')) {
+            target.parentElement.parentElement.remove();
+            Store.removeBook(target.parentElement.previousElementSibling.textContent.trim());
+            UI.showAlert("Book Removed!", "success");
+        }
+
+    }
 }
 
+//Class for Local Storage
+class Store {
+    static getBooks() {
+        let books;
+        if (localStorage.getItem('books') === null) {
+            books = [];
+        }
+        else {
+            books = JSON.parse(localStorage.getItem('books'));
+        }
+        return books;
+    }
+
+    static addBooks(book) {
+        let books = Store.getBooks();
+        books.push(book);
+        localStorage.setItem('books', JSON.stringify('books'));
+    }
+
+    static displayBooks() {
+        let books = Store.getBooks();
+
+        books.forEach(book => {
+            UI.addToBooklist(book);
+        });
+    }
+
+    static removeBook(isbn) {
+        let books = Store.getBooks();
+
+        books.forEach((book, index) => {
+            if (book.isbn === isbn) {
+                books.splice(index, 1);
+            }
+        })
+        localStorage.setItem('books', JSON.stringify('books'));
+    }
+}
 
 //Event Listener Section
 form.addEventListener('submit', newBook);
+booklist.addEventListener('click', removeBook);
+document.addEventListener('DOMContentLoaded', Store.displayBooks());
 
 
 function newBook(e) {
@@ -55,20 +102,26 @@ function newBook(e) {
         author = document.querySelector("#author").value,
         isbn = document.querySelector("#isbn").value;
 
-    let ui = new UI();
 
     if (title === '' || author === '' || isbn === '') {
-        ui.showAlert("Please fill all the fields", "error");
+        UI.showAlert("Please fill all the fields !", "error");
     }
     else {
         let book = new Book(title, author, isbn);
 
-        ui.addToBooklist(book);
+        UI.addToBooklist(book);
 
-        ui.clearFields();
-        ui.showAlert("Success !!!", "success");
+        UI.clearFields();
+        UI.showAlert("Books Added Successfully !", "success");
+
+        Store.addBooks(book);
 
     }
 
+    e.preventDefault();
+}
+
+function removeBook(e) {
+    UI.deleteFromBook(e.target);
     e.preventDefault();
 }
